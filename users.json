@@ -1,18 +1,22 @@
-// create-users.js (chạy một lần thôi)
-const bcrypt = require('bcrypt');
-const fs = require('fs');
-
-const employees = [
-  { id: "V3111318", name: "Vy Ngọc Khánh", plainPassword: "123456" },
-  { id: "V3167859", name: "Nguyễn Thị Lan ", plainPassword: "123456" },
-  // ... thêm 1000 người ở đây (có thể đọc từ Excel rồi paste)
-];
-
-const users = employees.map(emp => ({
-  id: emp.id,
-  name: emp.name,
-  hash: bcrypt.hashSync(emp.plainPassword, 10)
-}));
-
-fs.writeFileSync('users.json', JSON.stringify(users, null, 2));
-console.log('Đã tạo users.json với mật khẩu đã mã hóa');
+[
+  {
+    "id": "V3111318",
+    "name": "Vy Ngọc Khánh",
+    "hash": "$2b$10$oawwbwxevCyo2L9DUG4wdO13TxcAdI2WoW8QheED95oeDGUWrqkPS"
+  },
+  {
+    "id": "V3167859",
+    "name": "Nguyễn Thị Lan Hương",
+    "hash": "$2b$10$gagH0jc5SDBgB.HV9uAWAOiB8ZgyKo4FrCORu8.JziUaqOPBjFSWW"
+  },
+  {
+    "id": "V3120797",
+    "name": "Triệu Thị Lan",
+    "hash": "$2b$10$DmaTH6Lsp9AiCznUWaEGf.Mu0orI8qW9FBOpuZiVFPEPIkVsYsTiO"
+  },
+  {
+    "id": "V3113225",
+    "name": "Nguyễn Quang Anh",
+    "hash": "$2b$10$UpKJJvSGj/LDd0ZbErxtr.0d8K7VRq8vSBwwrxQzFwWbMoSDGl.oa"
+  }
+]
