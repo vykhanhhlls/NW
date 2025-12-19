@@ -1,0 +1,18 @@
+// create-users.js (chạy một lần thôi)
+const bcrypt = require('bcrypt');
+const fs = require('fs');
+
+const employees = [
+  { id: "V3111318", name: "Vy Ngọc Khánh", plainPassword: "123456" },
+  { id: "V3167859", name: "Nguyễn Thị Lan ", plainPassword: "123456" },
+  // ... thêm 1000 người ở đây (có thể đọc từ Excel rồi paste)
+];
+
+const users = employees.map(emp => ({
+  id: emp.id,
+  name: emp.name,
+  hash: bcrypt.hashSync(emp.plainPassword, 10)
+}));
+
+fs.writeFileSync('users.json', JSON.stringify(users, null, 2));
+console.log('Đã tạo users.json với mật khẩu đã mã hóa');
