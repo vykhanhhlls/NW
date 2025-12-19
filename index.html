@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>Tra cứu lương OneFit</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* Giữ nguyên style đẹp như phiên bản cũ */
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      max-width: 920px;
+      margin: 40px auto;
+      padding: 20px;
+      background: linear-gradient(135deg, #e0f7fa, #f0f4f8);
+      min-height: 100vh;
+    }
+    h1 { text-align: center; color: #01579b; margin-bottom: 30px; font-weight: 700; font-size: 2.5rem; }
+    .container { max-width: 600px; margin: 0 auto; }
+    .login-box, .salary-box {
+      background: rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 40px;
+      border-radius: 24px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+      text-align: center;
+    }
+    input {
+      width: 100%; padding: 16px; margin: 16px 0; border: none; border-radius: 12px;
+      background: rgba(255, 255, 255, 0.3); font-size: 1.1rem; color: #01579b;
+    }
+    input::placeholder { color: rgba(1, 87, 155, 0.7); }
+    button {
+      background: #01579b; color: white; padding: 16px 40px; border: none; border-radius: 12px;
+      font-size: 1.2rem; font-weight: 600; cursor: pointer; transition: 0.3s; margin: 10px;
+    }
+    button:hover { background: #003c72; transform: scale(1.05); }
+    .error { background: rgba(255, 235, 238, 0.8); color: #c62828; padding: 16px; border-radius: 12px; margin: 20px 0; }
+    .loading { background: rgba(227, 242, 253, 0.8); color: #1565c0; padding: 30px; border-radius: 16px; margin: 20px 0; font-size: 1.2rem; }
+    .info { background: rgba(232, 245, 232, 0.7); padding: 20px; border-radius: 16px; margin: 20px 0; font-size: 1.2rem; color: #2e7d32; }
+    table { width: 100%; border-collapse: separate; border-spacing: 0 10px; margin-top: 20px; }
+    th { background: #01579b; color: white; padding: 16px; text-align: left; }
+    td { padding: 16px; background: rgba(255, 255, 255, 0.4); }
+    tr td:first-child { border-radius: 12px 0 0 12px; }
+    tr td:last-child { border-radius: 0 12px 12px 0; }
+    .amount { text-align: right; font-weight: 600; color: #c62828; }
+    .net-salary-row td { background: rgba(200, 230, 201, 0.9) !important; font-weight: 700; font-size: 1.3rem; }
+    .logout { background: #d32f2f; }
+    .logout:hover { background: #b71c1c; }
+  </style>
+</head>
+<body>
+  <h1>Tra cứu lương OneFit</h1>
+  <div class="container">
+
+    <!-- Phần đăng nhập -->
+    <div id="loginBox" class="login-box">
+      <h2>Đăng nhập</h2>
+      <input type="text" id="username" placeholder="Mã nhân viên (ví dụ: V3111318)">
+      <input type="password" id="password" placeholder="Mật khẩu">
+      <button onclick="login()">ĐĂNG NHẬP</button>
+      <div id="loginError" class="error" style="display:none;"></div>
+    </div>
+
+    <!-- Phần tra cứu lương (ẩn lúc đầu) -->
+    <div id="salaryBox" class="salary-box" style="display:none;">
+      <h2 id="welcome"></h2>
+      <button class="logout" onclick="logout()">Đăng xuất</button>
+      <hr style="margin: 20px 0;">
+      <input type="text" id="thangInput" placeholder="Nhập tháng (YYYYMM) - để trống xem tháng hiện tại">
+      <button onclick="loadSalary()">TRA CỨU</button>
+      <div id="salaryResult"></div>
+    </div>
+
+  </div>
+
+<script>
+let currentUser = null;
+
+async function login() {
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  const errorDiv = document.getElementById('loginError');
+
+  if (!username || !password) {
+    errorDiv.textContent = 'Vui lòng nhập đầy đủ thông tin';
+    errorDiv.style.display = 'block';
+    return;
+  }
+
+  const res = await fetch('/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  });
+
+  const data = await res.json();
+
+  if (data.success) {
+    currentUser = data.user;
+    document.getElementById('loginBox').style.display = 'none';
+    document.getElementById('salaryBox').style.display = 'block';
+    document.getElementById('welcome').textContent = `Xin chào ${currentUser.name} (${currentUser.id})`;
+    loadSalary(); // tự động load tháng hiện tại
+  } else {
+    errorDiv.textContent = data.message || 'Đăng nhập thất bại';
+    errorDiv.style.display = 'block';
+  }
+}
+
+function logout() {
+  currentUser = null;
+  document.getElementById('loginBox').style.display = 'block';
+  document.getElementById('salaryBox').style.display = 'none';
+  document.getElementById('username').value = '';
+  document.getElementById('password').value = '';
+  document.getElementById('loginError').style.display = 'none';
+}
+
+async function loadSalary() {
+  const thangInput = document.getElementById('thangInput').value.trim();
+  const resultDiv = document.getElementById('salaryResult');
+
+  let isCurrentMonth = (thangInput === "");
+  let thangUse = "";
+  let thangHienThi = "";
+
+  if (isCurrentMonth) {
+    const today = new Date();
+    thangUse = today.getFullYear().toString() + String(today.getMonth() + 1).padStart(2, '0');
+    thangHienThi = `Tháng hiện tại (${thangUse.slice(4)}/${thangUse.slice(0,4)})`;
+  } else {
+    if (!/^\d{6}$/.test(thangInput)) {
+      resultDiv.innerHTML = '<div class="error">Tháng phải đúng định dạng YYYYMM (ví dụ: 202512)</div>';
+      return;
+    }
+    thangUse = thangInput;
+    thangHienThi = `${thangUse.slice(4)}/${thangUse.slice(0,4)}`;
+  }
+
+  resultDiv.innerHTML = `<div class="loading">Đang tải lương ${thangHienThi}...</div>`;
+
+  let url = isCurrentMonth
+    ? `https://esalary.one-fit.com/VN/Program/QueryReport/AjaxRequest.aspx?key=getsalarybyid&uid=${currentUser.id}&_=${Date.now()}`
+    : `https://esalary.one-fit.com/VN/Program/QueryReport/AjaxRequest.aspx?key=gethistorysalary&uid=${currentUser.id}&dateid=${thangUse}&_=${Date.now()}`;
+
+  const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(url);
+
+  try {
+    const res = await fetch(proxyUrl);
+    const text = await res.text();
+
+    if (!text || text.trim() === "" || text.includes("error")) {
+      resultDiv.innerHTML = `<div class="error">Không có dữ liệu lương cho ${thangHienThi}</div>`;
+      return;
+    }
+
+    const json = JSON.parse(text);
+    if (!Array.isArray(json) || json.length === 0) {
+      resultDiv.innerHTML = `<div class="error">Chưa có dữ liệu lương cho ${thangHienThi}</div>`;
+      return;
+    }
+
+    const nv = json[0];
+    const ten = nv.userName || currentUser.name;
+    const pb = nv.departName || "Không rõ";
+
+    let table = `
+      <div class="info">${ten} • ${currentUser.id} • ${pb} • ${thangHienThi}</div>
+      <table>
+        <tr><th>STT</th><th>Mã</th><th>Khoản mục</th><th style="text-align:right;">Số tiền</th></tr>
+    `;
+
+    json.forEach((item, i) => {
+      const tien = parseFloat(item.amount || 0);
+      const formatted = tien.toLocaleString("vi-VN") + " ₫";
+      const isNet = (item.itemCode === "D002") || (item.salaryDesc && item.salaryDesc.includes("thực lĩnh"));
+      const rowClass = isNet ? ' class="net-salary-row"' : '';
+      table += `
+        <tr${rowClass}>
+          <td style="text-align:center;">${i+1}</td>
+          <td>${item.itemCode || ""}</td>
+          <td>${item.salaryDesc || ""}</td>
+          <td class="amount">${formatted}</td>
+        </tr>
+      `;
+    });
+
+    table += `</table>`;
+    resultDiv.innerHTML = table;
+
+  } catch (err) {
+    resultDiv.innerHTML = `<div class="error">Lỗi kết nối: ${err.message}</div>`;
+  }
+}
+
+// Enter để đăng nhập
+document.getElementById('password')?.addEventListener('keypress', e => {
+  if (e.key === 'Enter') login();
+});
+</script>
+</body>
+</html>
